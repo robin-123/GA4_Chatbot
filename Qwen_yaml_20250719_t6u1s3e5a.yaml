@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo "Installing dependencies..."
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+
+  pre_build:
+    commands:
+      - echo "Validating Python files..."
+      - python -m py_compile main.py  # Basic syntax check
+      - echo "Environment variables: $AWS_DEFAULT_REGION, $S3_BUCKET_NAME"
+
+  build:
+    commands:
+      - echo "Zipping application files..."
+      - zip -r9 ../app.zip .  # Package everything for deployment
+
+  post_build:
+    commands:
+      - echo "Uploading to S3..."
+      - aws s3 cp ../app.zip s3://$S3_BUCKET_NAME/app.zip
+      - echo "Build completed on `date`"
+
+artifacts:
+  files:
+    - main.py
+    - requirements.txt
+    - templates/**
+    - service-account.json
+    - .env
+  discard-paths: no
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
